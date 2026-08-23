@@ -1,0 +1,13 @@
+{
+  "name": "git-history-lint",
+  "version": "0.1.0",
+  "description": "A linter for git commit messages with line and column error reporting",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "git-history-lint": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc"
+  }
+}
