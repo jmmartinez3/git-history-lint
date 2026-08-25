@@ -74,10 +74,36 @@ node dist/cli.js "$1"
 Git passes the path to the message file as the hook's first argument, which
 lines up with what the CLI expects.
 
+## Scanning history
+
+To check messages that are already in `git log`, instead of a single
+pending one:
+
+```sh
+node dist/cli.js --history
+```
+
+This shells out to `git log` for every commit reachable from `HEAD` and
+lints each message on its own, printing one code frame per commit that has
+a finding, labeled with its short hash instead of a file path. An optional
+second argument is passed straight through to `git log` as the rev range,
+so you can scope it:
+
+```sh
+node dist/cli.js --history main..feature-branch
+node dist/cli.js --history HEAD~50..
+```
+
+Exit code follows the same rule as single-message mode: 1 if any commit in
+the range has an error-level finding, 0 otherwise.
+
 ## Library use
 
 `lint(text: string): Finding[]` in `src/linter.ts` is the whole API surface.
 Each `Finding` carries `ruleId`, `severity`, `message`, `line`, `column`, and
 `length` (how many characters to underline). `formatFindings` in
 `src/format.ts` turns a list of findings into the printable code-frame form
-shown above, if you want the report without the CLI wrapper.
+shown above, if you want the report without the CLI wrapper. `loadHistory`
+in `src/history.ts` returns `{ hash, message }` for each commit in a rev
+range, if you want to drive the walk yourself instead of going through the
+CLI's `--history` flag.
