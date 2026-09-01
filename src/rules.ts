@@ -112,10 +112,71 @@ const trailingWhitespace: Rule = {
   },
 };
 
+// Suffix-based, not dictionary-based, so it misses conjugation and can
+// false-positive on words that are already imperative but happen to end in
+// these letters (e.g. "Bring", "Feed"). The length floors filter out the
+// short, common cases; anything longer is rare enough as a genuine
+// imperative first word that the warning is still worth showing.
+const IMPERATIVE_SUFFIXES: Array<{ suffix: string; minLength: number }> = [
+  { suffix: "ing", minLength: 6 },
+  { suffix: "ed", minLength: 5 },
+];
+
+const imperativeMood: Rule = {
+  id: "imperative-mood",
+  check(lines) {
+    const subject = lines[0] ?? "";
+    if (isComment(subject)) return [];
+
+    const match = /^[A-Za-z]+/.exec(subject);
+    if (!match) return [];
+    const word = match[0];
+    const lower = word.toLowerCase();
+
+    const hit = IMPERATIVE_SUFFIXES.find(({ suffix, minLength }) => word.length >= minLength && lower.endsWith(suffix));
+    if (!hit) return [];
+
+    return [
+      {
+        ruleId: "imperative-mood",
+        severity: "warning",
+        message: `subject starts with "${word}" — phrase it as a command instead, the way git itself does ("Add x", not "Added x" or "Adding x")`,
+        line: 1,
+        column: 1,
+        length: word.length,
+      },
+    ];
+  },
+};
+
+const issueReference: Rule = {
+  id: "issue-reference",
+  check(lines) {
+    const subject = lines[0] ?? "";
+    if (isComment(subject)) return [];
+
+    const match = /#\d+/.exec(subject);
+    if (!match) return [];
+
+    return [
+      {
+        ruleId: "issue-reference",
+        severity: "warning",
+        message: `issue reference "${match[0]}" in the subject line — move it to the body, it eats into the subject length budget and most tools link it fine from a footer too`,
+        line: 1,
+        column: match.index + 1,
+        length: match[0].length,
+      },
+    ];
+  },
+};
+
 export const rules: Rule[] = [
   emptyMessage,
   subjectMaxLength,
   subjectTrailingPeriod,
   blankLineAfterSubject,
   trailingWhitespace,
+  imperativeMood,
+  issueReference,
 ];

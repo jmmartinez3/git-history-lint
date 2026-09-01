@@ -19,6 +19,12 @@ No dependencies. No lockfile. Standard library only.
 - `subject-trailing-period` — subject ends with `.`
 - `blank-line-after-subject` — body present but no blank line separating it from the subject
 - `trailing-whitespace` — trailing spaces or tabs on any non-comment line
+- `imperative-mood` — subject's first word looks past-tense or gerund ("Added", "Fixing")
+  instead of a command ("Add", "Fix"). This is a suffix check, not a dictionary, so it can
+  miss real conjugations and occasionally flag a word that's already imperative but happens
+  to end in `-ed` or `-ing` (like "Bring").
+- `issue-reference` — subject line contains something like `#123`; put it in the body instead
+  so it doesn't eat into the subject length limit
 
 ## Building
 
