@@ -1,3 +1,4 @@
+import type { Config } from "./config.js";
 import { rules } from "./rules.js";
 
 export interface Finding {
@@ -25,9 +26,17 @@ export function splitLines(text: string): string[] {
   return text.split(/\r\n|\r|\n/);
 }
 
-export function lint(text: string): Finding[] {
+export function lint(text: string, config: Config = { rules: {} }): Finding[] {
   const lines = splitLines(text);
-  const findings = rules.flatMap((rule) => rule.check(lines));
+  const findings = rules.flatMap((rule) => {
+    const override = config.rules[rule.id];
+    if (override === "off") return [];
+    const results = rule.check(lines);
+    if (override === "warning" || override === "error") {
+      return results.map((finding) => ({ ...finding, severity: override }));
+    }
+    return results;
+  });
   findings.sort((a, b) => a.line - b.line || a.column - b.column);
   return findings;
 }

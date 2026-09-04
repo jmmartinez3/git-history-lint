@@ -3,8 +3,9 @@ import { readFileSync } from "node:fs";
 import { lint } from "./linter.js";
 import { formatFindings } from "./format.js";
 import { loadHistory } from "./history.js";
+import { loadConfig, type Config } from "./config.js";
 
-function lintMessageFile(path: string): void {
+function lintMessageFile(path: string, config: Config): void {
   let text: string;
   try {
     text = readFileSync(path, "utf8");
@@ -15,7 +16,7 @@ function lintMessageFile(path: string): void {
     return;
   }
 
-  const findings = lint(text);
+  const findings = lint(text, config);
   const useColor = process.stdout.isTTY === true;
   const output = formatFindings(findings, path, text, useColor);
   if (output) {
@@ -25,7 +26,7 @@ function lintMessageFile(path: string): void {
   process.exitCode = findings.some((finding) => finding.severity === "error") ? 1 : 0;
 }
 
-function lintHistory(revRange?: string): void {
+function lintHistory(revRange: string | undefined, config: Config): void {
   let commits;
   try {
     commits = loadHistory(revRange);
@@ -41,7 +42,7 @@ function lintHistory(revRange?: string): void {
   let hasError = false;
 
   for (const commit of commits) {
-    const findings = lint(commit.message);
+    const findings = lint(commit.message, config);
     if (findings.length === 0) continue;
     if (findings.some((finding) => finding.severity === "error")) hasError = true;
     reports.push(formatFindings(findings, commit.hash.slice(0, 7), commit.message, useColor));
@@ -54,13 +55,23 @@ function lintHistory(revRange?: string): void {
 }
 
 function main(): void {
-  const args = process.argv.slice(2);
-  if (args[0] === "--history") {
-    lintHistory(args[1]);
+  let config: Config;
+  try {
+    config = loadConfig();
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    process.stderr.write(`git-history-lint: could not load config: ${reason}\n`);
+    process.exitCode = 2;
     return;
   }
 
-  lintMessageFile(args[0] ?? ".git/COMMIT_EDITMSG");
+  const args = process.argv.slice(2);
+  if (args[0] === "--history") {
+    lintHistory(args[1], config);
+    return;
+  }
+
+  lintMessageFile(args[0] ?? ".git/COMMIT_EDITMSG", config);
 }
 
 main();

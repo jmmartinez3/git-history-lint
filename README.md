@@ -80,6 +80,29 @@ node dist/cli.js "$1"
 Git passes the path to the message file as the hook's first argument, which
 lines up with what the CLI expects.
 
+## Configuration
+
+Every rule is on by default. To turn one off, or to change whether it fails
+the hook, put a `.git-history-lint.json` next to your repo's `.git`
+directory (or anywhere above the message file being linted — it walks
+upward the same way git looks for `.git`):
+
+```json
+{
+  "rules": {
+    "subject-max-length": "off",
+    "issue-reference": "error"
+  }
+}
+```
+
+Each entry under `rules` is a rule id (see the list above) mapped to
+`"off"`, `"warning"`, or `"error"`. `"off"` drops the rule's findings
+entirely; `"warning"` and `"error"` keep the rule running but replace its
+built-in severity, which is what decides the process exit code. Rules left
+out of the file keep their default severity. No config file at all is the
+same as an empty one — every rule runs at its default.
+
 ## Scanning history
 
 To check messages that are already in `git log`, instead of a single
@@ -112,4 +135,6 @@ Each `Finding` carries `ruleId`, `severity`, `message`, `line`, `column`, and
 shown above, if you want the report without the CLI wrapper. `loadHistory`
 in `src/history.ts` returns `{ hash, message }` for each commit in a rev
 range, if you want to drive the walk yourself instead of going through the
-CLI's `--history` flag.
+CLI's `--history` flag. `loadConfig` in `src/config.ts` finds and parses
+`.git-history-lint.json`, returning the `Config` object `lint` accepts as
+its optional second argument.
