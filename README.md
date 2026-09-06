@@ -69,6 +69,20 @@ it reports:
 Exit code is 1 if any finding is an error, 0 otherwise (warnings alone don't
 fail the hook).
 
+### Auto-fixing
+
+Two rules have an unambiguous correction: `trailing-whitespace` and
+`subject-trailing-period`. Pass `--fix` to strip trailing whitespace and a
+trailing subject period before linting, rewriting the message file in place:
+
+```sh
+node dist/cli.js --fix path/to/message.txt
+```
+
+Everything else — a missing blank line, a subject that isn't imperative, an
+issue reference in the wrong place — needs a human to decide what the text
+should say, so those still just get reported.
+
 To wire it in as a hook:
 
 ```sh

@@ -1,11 +1,12 @@
 #!/usr/bin/env node
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { lint } from "./linter.js";
 import { formatFindings } from "./format.js";
 import { loadHistory } from "./history.js";
 import { loadConfig, type Config } from "./config.js";
+import { applyFixes } from "./fix.js";
 
-function lintMessageFile(path: string, config: Config): void {
+function lintMessageFile(path: string, config: Config, fix: boolean): void {
   let text: string;
   try {
     text = readFileSync(path, "utf8");
@@ -14,6 +15,14 @@ function lintMessageFile(path: string, config: Config): void {
     process.stderr.write(`git-history-lint: could not read ${path}: ${reason}\n`);
     process.exitCode = 2;
     return;
+  }
+
+  if (fix) {
+    const fixed = applyFixes(text);
+    if (fixed.changed) {
+      writeFileSync(path, fixed.text, "utf8");
+      text = fixed.text;
+    }
   }
 
   const findings = lint(text, config);
@@ -71,7 +80,9 @@ function main(): void {
     return;
   }
 
-  lintMessageFile(args[0] ?? ".git/COMMIT_EDITMSG", config);
+  const fix = args.includes("--fix");
+  const path = args.find((arg) => arg !== "--fix") ?? ".git/COMMIT_EDITMSG";
+  lintMessageFile(path, config, fix);
 }
 
 main();
