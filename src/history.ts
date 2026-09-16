@@ -14,14 +14,16 @@ const RECORD_SEP = "\x1e";
  * Walks commit history via `git log`, oldest-filtering left to the caller
  * (git's own default order — newest first — is preserved). revRange is
  * passed straight through to `git log`, so anything git accepts there
- * (a branch name, `HEAD~20..HEAD`, `--all`, ...) works.
+ * (a branch name, `HEAD~20..HEAD`, `--all`, ...) works. cwd defaults to
+ * the process's own working directory, same as a bare `git` invocation.
  */
-export function loadHistory(revRange?: string): Commit[] {
+export function loadHistory(revRange?: string, cwd?: string): Commit[] {
   const format = `%H${FIELD_SEP}%B${RECORD_SEP}`;
   const args = ["log", `--format=${format}`];
   if (revRange) args.push(revRange);
 
   const output = execFileSync("git", args, {
+    cwd,
     encoding: "utf8",
     maxBuffer: 1024 * 1024 * 64,
   });

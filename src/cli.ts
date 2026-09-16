@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readFileSync, writeFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 import { lint } from "./linter.js";
 import { formatFindings } from "./format.js";
 import { loadHistory } from "./history.js";
@@ -33,6 +34,20 @@ function lintMessageFile(path: string, config: Config, fix: boolean): void {
   }
 
   process.exitCode = findings.some((finding) => finding.severity === "error") ? 1 : 0;
+}
+
+export type ParsedArgs =
+  | { mode: "history"; revRange: string | undefined }
+  | { mode: "lint"; path: string; fix: boolean };
+
+export function parseArgs(argv: string[]): ParsedArgs {
+  if (argv[0] === "--history") {
+    return { mode: "history", revRange: argv[1] };
+  }
+
+  const fix = argv.includes("--fix");
+  const path = argv.find((arg) => arg !== "--fix") ?? ".git/COMMIT_EDITMSG";
+  return { mode: "lint", path, fix };
 }
 
 function lintHistory(revRange: string | undefined, config: Config): void {
@@ -74,15 +89,16 @@ function main(): void {
     return;
   }
 
-  const args = process.argv.slice(2);
-  if (args[0] === "--history") {
-    lintHistory(args[1], config);
+  const parsed = parseArgs(process.argv.slice(2));
+  if (parsed.mode === "history") {
+    lintHistory(parsed.revRange, config);
     return;
   }
 
-  const fix = args.includes("--fix");
-  const path = args.find((arg) => arg !== "--fix") ?? ".git/COMMIT_EDITMSG";
-  lintMessageFile(path, config, fix);
+  lintMessageFile(parsed.path, config, parsed.fix);
 }
 
-main();
+// Guarded so importing this module (e.g. from tests) doesn't run the CLI.
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  main();
+}
