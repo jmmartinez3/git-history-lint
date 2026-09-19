@@ -140,6 +140,27 @@ node dist/cli.js --history HEAD~50..
 Exit code follows the same rule as single-message mode: 1 if any commit in
 the range has an error-level finding, 0 otherwise.
 
+## Testing
+
+```sh
+npm test
+```
+
+This compiles with `tsc` and runs everything under `dist/` through node's
+built-in test runner (`node --test`), so there's nothing extra to install.
+Each source file with behavior worth pinning down has a matching
+`*.test.ts` next to it: `rules.test.ts` checks every rule's finding
+(position, length, and the false-positive cases each one has to avoid),
+`config.test.ts` covers config discovery, upward directory walking, and the
+malformed-file error messages, `cli.test.ts` covers argument parsing, and
+`fix.test.ts` covers the `--fix` rewrite. `history.test.ts` actually shells
+out to `git` against a temp repo created with `mkdtempSync` — real commits,
+not fixtures — so it also serves as an integration check that `loadHistory`
+parses whatever format `git log` happens to produce.
+
+There's no coverage tooling wired in; the tests are meant to document
+behavior and catch regressions in the position math, not to hit a number.
+
 ## Library use
 
 `lint(text: string): Finding[]` in `src/linter.ts` is the whole API surface.
